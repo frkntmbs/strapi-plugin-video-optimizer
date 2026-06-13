@@ -2,12 +2,16 @@
 
 Per-video optimization controls for the Strapi 5 Media Library upload flow, with async FFmpeg encoding.
 
+```bash
+npm install @frkntmbs/strapi-plugin-video-optimizer
+```
+
 [![npm](https://img.shields.io/npm/v/@frkntmbs/strapi-plugin-video-optimizer)](https://www.npmjs.com/package/@frkntmbs/strapi-plugin-video-optimizer)
 [![Strapi](https://img.shields.io/badge/Strapi-5.x-4945FF)](https://strapi.io)
 [![Node](https://img.shields.io/badge/Node-20--24-339933)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[GitHub](https://github.com/frkntmbs/strapi-plugin-video-optimizer) · [Issues](https://github.com/frkntmbs/strapi-plugin-video-optimizer/issues) · [npm](https://www.npmjs.com/package/@frkntmbs/strapi-plugin-video-optimizer)
+[GitHub](https://github.com/frkntmbs/strapi-plugin-video-optimizer) · [Issues](https://github.com/frkntmbs/strapi-plugin-video-optimizer/issues) · [npm](https://www.npmjs.com/package/@frkntmbs/strapi-plugin-video-optimizer) · [Image Optimizer](https://www.npmjs.com/package/@frkntmbs/strapi-plugin-image-optimizer)
 
 ---
 
@@ -27,39 +31,39 @@ Upload UX mirrors [`strapi-plugin-image-optimizer`](https://github.com/frkntmbs/
 
 Each pending video shows the current optimization choice and a sparkle button to open per-file settings.
 
-![Media Library upload modal with optimization controls](docs/screenshots/upload-modal.png)
+![Media Library upload modal with optimization controls](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/upload-modal.png)
 
 ### Optimization choice
 
 Pick **Keep original**, **Apply global settings**, or **Custom** for the selected video.
 
-![Video optimization choice dialog](docs/screenshots/optimization-choice.png)
+![Video optimization choice dialog](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/optimization-choice.png)
 
 ### Custom per-file settings
 
 In **Custom** mode, configure output format, CRF, encode preset, audio handling, and output dimensions. Width and height default to the original video size; changing one value updates the other to preserve aspect ratio.
 
-![Custom video optimization settings](docs/screenshots/custom-settings.png)
+![Custom video optimization settings](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/custom-settings.png)
 
 ### Media Library progress
 
 After upload, active jobs show a progress bar on each card — **In queue** with a spinner, then **Encoding video** with a percentage.
 
-![Media Library cards with optimization progress](docs/screenshots/media-library-progress.png)
+![Media Library cards with optimization progress](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/media-library-progress.png)
 
-![Single video encoding progress](docs/screenshots/media-library-encoding.png)
+![Single video encoding progress](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/media-library-encoding.png)
 
 ### Media Library card actions
 
 Hover an existing video to **re-optimize** (sparkle) or **cancel** an active encode job (stop).
 
-![Media Library card hover actions](docs/screenshots/media-library-actions.png)
+![Media Library card hover actions](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/media-library-actions.png)
 
 ### Global settings
 
 Configure default upload choice, the global optimization profile, and server concurrency limits under **Settings → Global → Video Optimizer**.
 
-![Video Optimizer global settings page](docs/screenshots/global-settings.png)
+![Video Optimizer global settings page](https://raw.githubusercontent.com/frkntmbs/strapi-plugin-video-optimizer/main/docs/screenshots/global-settings.png)
 
 ## Features
 
@@ -152,8 +156,8 @@ All options can be set in `config/plugins.ts` (defaults) and overridden from the
 | `videoCodec` | `'h264'` \| `'vp9'` | `'h264'` | Video codec (selected automatically from format) |
 | `crf` | `0–51` | `23` | Constant Rate Factor — lower = better quality, larger file |
 | `preset` | x264 preset | `'medium'` | Encode speed vs compression (H.264 only) |
-| `maxWidth` | number | `1920` | Global profile: max output width (scale down if larger) |
-| `maxHeight` | number | `1080` | Global profile: max output height (scale down if larger) |
+| `maxWidth` | number | `1920` | Global profile: max width ceiling (fit-within, scale down if exceeded) |
+| `maxHeight` | number | `1080` | Global profile: max height ceiling (fit-within, scale down if exceeded) |
 | `audioMode` | `'keep'` \| `'remove'` \| `'compress'` | `'compress'` | Audio track handling |
 | `audioBitrate` | string | `'128k'` | Audio bitrate when compressing |
 | `maxConcurrentJobs` | `1–32` | `1` | Max parallel FFmpeg jobs on the server |
@@ -189,7 +193,7 @@ No optimization is applied. The file is uploaded exactly as selected — same fo
 
 #### Apply global settings
 
-Uses the global optimization profile from the settings page (format, CRF, preset, audio, max dimensions). Videos larger than the global width/height are scaled down while preserving aspect ratio.
+Uses the global optimization profile from the settings page (format, CRF, preset, audio, max dimensions). Global width/height form a **bounding box** — videos are scaled down only if they exceed either limit, with aspect ratio preserved (e.g. a 1080×1920 portrait video with a 1920×1080 global profile becomes ~608×1080).
 
 #### Custom
 
@@ -229,6 +233,19 @@ Assign these in **Settings → Administration panel → Roles** for each admin r
 - **Jobs on restart** — Active jobs are cleared when Strapi restarts; re-upload or re-optimize manually if needed
 - **Custom thread limit** — Per-video thread count is not configurable; use global `maxFfmpegThreads`
 - Strapi uploads each pending card in a separate request; preferences are matched to the correct file by name and card order
+
+## Publishing
+
+For maintainers releasing a new version to npm:
+
+```bash
+npm login
+npm run build
+npm run verify
+npm publish --access public
+```
+
+Scoped package name: `@frkntmbs/strapi-plugin-video-optimizer` (`publishConfig.access` is already set to `public` in `package.json`).
 
 ## Development
 

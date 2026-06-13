@@ -31,7 +31,6 @@
     "dist",
     "admin",
     "server",
-    "docs",
     "strapi-admin.js",
     "strapi-server.js",
     "README.md",
