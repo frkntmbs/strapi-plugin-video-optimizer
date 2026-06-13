@@ -1,6 +1,8 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
 import { UploadEnhancerRoot } from '../components/BridgeProviders';
+import { mergeGlobalSettings } from '../defaultGlobalSettings';
+import type { GlobalOptimizationSettings } from '../pluginId';
 import { patchUploadFetch, patchUploadXHR } from './uploadAssetStore';
 import {
   clearUploadSession,
@@ -9,9 +11,19 @@ import {
   setGlobalSettings,
   setUploadAssetCards,
   setUploadDialogElement,
+  updateAssetDimensions,
   type UploadAssetEntry,
 } from './uploadAssetStore';
 import { isVideoFileName } from '../pluginId';
+import { extractAssetDimensions } from './extractAssetDimensions';
+import {
+  ensureVideoElementDimensions,
+  findUploadFilesInDialog,
+  matchUploadFile,
+  probeVideoFileDimensions,
+} from './probeVideoDimensions';
+
+const pendingDimensionProbes = new Set<string>();
 
 let bridgeRoot: Root | null = null;
 let bridgeHost: HTMLElement | null = null;
@@ -53,31 +65,9 @@ const loadGlobalSettings = async () => {
       return;
     }
 
-    const data = (await response.json()) as {
-      defaultChoice?: 'original' | 'global' | 'custom';
-      defaultFormat?: 'mp4' | 'webm';
-      videoCodec?: 'h264' | 'vp9';
-      crf?: number;
-      preset?: 'medium';
-      maxWidth?: number;
-      maxHeight?: number;
-      audioMode?: 'keep' | 'remove' | 'compress';
-      audioBitrate?: string;
-      maxConcurrentJobs?: number;
-    };
+    const data = (await response.json()) as Partial<GlobalOptimizationSettings>;
 
-    setGlobalSettings({
-      defaultChoice: data.defaultChoice ?? 'original',
-      defaultFormat: data.defaultFormat ?? 'mp4',
-      videoCodec: data.videoCodec ?? 'h264',
-      crf: data.crf ?? 23,
-      preset: data.preset ?? 'medium',
-      maxWidth: data.maxWidth ?? 1920,
-      maxHeight: data.maxHeight ?? 1080,
-      audioMode: data.audioMode ?? 'compress',
-      audioBitrate: data.audioBitrate ?? '128k',
-      maxConcurrentJobs: data.maxConcurrentJobs ?? 1,
-    });
+    setGlobalSettings(mergeGlobalSettings(data));
   } catch {
     // Keep fallback defaults.
   }
@@ -192,23 +182,6 @@ const extractAssetName = (card: Element) => {
   return titleText || null;
 };
 
-const extractAssetDimensions = (card: Element) => {
-  const video = card.querySelector('video');
-
-  if (video instanceof HTMLVideoElement && video.videoWidth > 0 && video.videoHeight > 0) {
-    return { width: video.videoWidth, height: video.videoHeight };
-  }
-
-  const cardText = card.textContent ?? '';
-  const match = cardText.match(/(\d+)\s*[×✕xX]\s*(\d+)/);
-
-  if (match) {
-    return { width: Number(match[1]), height: Number(match[2]) };
-  }
-
-  return undefined;
-};
-
 const findCardRoot = (editButton: Element, dialog: Element) => {
   let element = editButton.parentElement;
 
@@ -314,6 +287,44 @@ const ensureFooterHost = (cardElement: HTMLElement, assetId: string) => {
   return footerHost;
 };
 
+const queueDimensionProbe = (
+  dialog: Element,
+  assetId: string,
+  assetName: string,
+  card: Element
+) => {
+  if (pendingDimensionProbes.has(assetId)) {
+    return;
+  }
+
+  pendingDimensionProbes.add(assetId);
+
+  void (async () => {
+    try {
+      let dimensions = extractAssetDimensions(card);
+
+      if (!dimensions) {
+        dimensions = await ensureVideoElementDimensions(card);
+      }
+
+      if (!dimensions) {
+        const files = findUploadFilesInDialog(dialog);
+        const file = matchUploadFile(files, assetName);
+
+        if (file) {
+          dimensions = await probeVideoFileDimensions(file);
+        }
+      }
+
+      if (dimensions) {
+        updateAssetDimensions(assetId, dimensions);
+      }
+    } finally {
+      pendingDimensionProbes.delete(assetId);
+    }
+  })();
+};
+
 const collectCards = (dialog: Element): UploadAssetEntry[] => {
   const entries: UploadAssetEntry[] = [];
   const seenCards = new Set<Element>();
@@ -357,6 +368,10 @@ const collectCards = (dialog: Element): UploadAssetEntry[] => {
     const dimensions = extractAssetDimensions(card);
 
     registerAsset(assetId, assetName, dimensions);
+
+    if (!dimensions) {
+      queueDimensionProbe(dialog, assetId, assetName, card);
+    }
 
     entries.push({
       assetId,

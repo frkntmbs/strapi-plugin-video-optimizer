@@ -5,7 +5,9 @@ import type {
   VideoCodec,
   VideoFormat,
 } from '../constants';
-import { MAX_CONCURRENT_JOBS_LIMIT, clampMaxConcurrentJobs } from '../constants';
+import { MAX_CONCURRENT_JOBS_LIMIT, MAX_FFMPEG_THREADS_LIMIT, clampMaxConcurrentJobs, clampMaxFfmpegThreads } from '../constants';
+
+import { DEFAULT_PLUGIN_CONFIG } from './defaults';
 
 export interface PluginConfig {
   defaultChoice: OptimizationChoice;
@@ -18,21 +20,11 @@ export interface PluginConfig {
   audioMode: AudioMode;
   audioBitrate: string;
   maxConcurrentJobs: number;
+  maxFfmpegThreads: number;
 }
 
 export default {
-  default: (): PluginConfig => ({
-    defaultChoice: 'original',
-    defaultFormat: 'mp4',
-    videoCodec: 'h264',
-    crf: 23,
-    preset: 'medium',
-    maxWidth: 1920,
-    maxHeight: 1080,
-    audioMode: 'compress',
-    audioBitrate: '128k',
-    maxConcurrentJobs: 1,
-  }),
+  default: (): PluginConfig => ({ ...DEFAULT_PLUGIN_CONFIG }),
   validator(config: Partial<PluginConfig>) {
     if (config.crf !== undefined && (config.crf < 0 || config.crf > 51)) {
       throw new Error('crf must be between 0 and 51');
@@ -48,6 +40,12 @@ export default {
       clampMaxConcurrentJobs(config.maxConcurrentJobs) !== config.maxConcurrentJobs
     ) {
       throw new Error(`maxConcurrentJobs must be between 1 and ${MAX_CONCURRENT_JOBS_LIMIT}`);
+    }
+    if (
+      config.maxFfmpegThreads !== undefined &&
+      clampMaxFfmpegThreads(config.maxFfmpegThreads) !== config.maxFfmpegThreads
+    ) {
+      throw new Error(`maxFfmpegThreads must be between 1 and ${MAX_FFMPEG_THREADS_LIMIT}`);
     }
   },
 };

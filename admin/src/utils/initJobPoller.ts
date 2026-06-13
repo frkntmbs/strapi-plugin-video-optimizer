@@ -4,6 +4,7 @@ import {
   invalidateMediaLibraryCache,
 } from './invalidateMediaLibrary';
 import { syncMediaLibraryProgress } from './initMediaLibraryProgress';
+import { syncMediaLibraryCardActions } from './initMediaLibraryCardActions';
 import { setWatchedJobs } from './jobProgressStore';
 import { isMediaLibraryPath } from './mediaLibraryRoute';
 
@@ -143,6 +144,7 @@ const handleRouteChange = (pathname: string) => {
 
   if (isMediaLibraryPath(pathname)) {
     void pollActiveJobs();
+    syncMediaLibraryCardActions();
     return;
   }
 

@@ -8,6 +8,7 @@ import ffmpegStatic from 'ffmpeg-static';
 import type { Core } from '@strapi/strapi';
 import { file as fileUtils } from '@strapi/utils';
 import type { OptimizationSettings } from '../constants';
+import { clampMaxFfmpegThreads } from '../constants';
 
 const { bytesToKbytes } = fileUtils;
 
@@ -61,22 +62,36 @@ const probeVideo = (inputPath: string): Promise<VideoMetadata> =>
     });
   });
 
-const buildScaleFilter = (settings: OptimizationSettings, metadata: VideoMetadata) => {
-  const sourceWidth = metadata.width ?? settings.maxWidth;
-  const sourceHeight = metadata.height ?? settings.maxHeight;
+const buildScaleFilter = (
+  settings: OptimizationSettings,
+  metadata: VideoMetadata,
+  resizeMode: 'exact' | 'fit-within' = 'exact'
+) => {
+  const targetWidth = settings.maxWidth;
+  const targetHeight = settings.maxHeight;
+  const sourceWidth = metadata.width ?? 0;
+  const sourceHeight = metadata.height ?? 0;
 
-  if (!sourceWidth || !sourceHeight) {
-    return `scale='min(${settings.maxWidth},iw)':'min(${settings.maxHeight},ih)':force_original_aspect_ratio=decrease`;
-  }
-
-  if (sourceWidth <= settings.maxWidth && sourceHeight <= settings.maxHeight) {
+  if (!targetWidth || !targetHeight || !sourceWidth || !sourceHeight) {
     return null;
   }
 
-  return `scale='min(${settings.maxWidth},iw)':'min(${settings.maxHeight},ih)':force_original_aspect_ratio=decrease`;
+  if (targetWidth === sourceWidth && targetHeight === sourceHeight) {
+    return null;
+  }
+
+  if (resizeMode === 'fit-within') {
+    if (sourceWidth <= targetWidth && sourceHeight <= targetHeight) {
+      return null;
+    }
+
+    return `scale='min(${targetWidth},iw)':'min(${targetHeight},ih)':force_original_aspect_ratio=decrease`;
+  }
+
+  return `scale=${targetWidth}:${targetHeight}`;
 };
 
-const buildVideoCodecOptions = (settings: OptimizationSettings) => {
+const buildVideoCodecOptions = (settings: OptimizationSettings, maxThreads: number) => {
   if (settings.defaultFormat === 'webm' || settings.videoCodec === 'vp9') {
     return {
       videoCodec: 'libvpx-vp9',
@@ -86,7 +101,7 @@ const buildVideoCodecOptions = (settings: OptimizationSettings) => {
         '-b:v',
         '0',
         '-row-mt',
-        '1',
+        maxThreads > 1 ? '1' : '0',
         '-speed',
         '4',
       ],
@@ -97,6 +112,12 @@ const buildVideoCodecOptions = (settings: OptimizationSettings) => {
     videoCodec: 'libx264',
     outputOptions: [`-crf`, String(settings.crf), '-preset', settings.preset],
   };
+};
+
+const buildThreadOptions = (maxThreads: number) => {
+  const threads = clampMaxFfmpegThreads(maxThreads);
+
+  return ['-threads', String(threads)];
 };
 
 const buildAudioOptions = (settings: OptimizationSettings) => {
@@ -119,6 +140,7 @@ export interface ProcessOptions {
   jobId: string;
   inputPath: string;
   settings: OptimizationSettings;
+  resizeMode?: 'exact' | 'fit-within';
   onProgress?: (progress: number, stage: string) => void;
 }
 
@@ -162,6 +184,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     jobId,
     inputPath,
     settings,
+    resizeMode = 'exact',
     onProgress,
   }: ProcessOptions): Promise<ProcessResult> {
     configureFfmpegPath();
@@ -171,9 +194,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const outputMime = settings.defaultFormat === 'webm' ? 'video/webm' : 'video/mp4';
     const outputPath = join(tmpdir(), `video-optimizer-${randomUUID()}${outputExt}`);
 
-    const scaleFilter = buildScaleFilter(settings, metadata);
-    const videoOptions = buildVideoCodecOptions(settings);
+    const scaleFilter = buildScaleFilter(settings, metadata, resizeMode);
+    const globalSettings = await strapi
+      .plugin('video-optimizer')
+      .service('preference')
+      .getGlobalSettings();
+    const maxThreads = globalSettings.maxFfmpegThreads;
+    const videoOptions = buildVideoCodecOptions(settings, maxThreads);
     const audioOptions = buildAudioOptions(settings);
+    const threadOptions = buildThreadOptions(maxThreads);
     const duration = metadata.duration ?? 0;
 
     await new Promise<void>((resolve, reject) => {
@@ -186,7 +215,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       command = command
         .format(settings.defaultFormat)
         .videoCodec(videoOptions.videoCodec)
-        .outputOptions([...videoOptions.outputOptions, ...audioOptions.outputOptions]);
+        .outputOptions([
+          ...threadOptions,
+          ...videoOptions.outputOptions,
+          ...audioOptions.outputOptions,
+        ]);
 
       if (audioOptions.audioCodec) {
         command = command.audioCodec(audioOptions.audioCodec);

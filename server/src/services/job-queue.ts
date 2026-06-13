@@ -260,7 +260,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     job.settings?.defaultFormat === 'webm' ? '.webm' : '.mp4';
 
   const getOptimizerMeta = (file: Record<string, unknown>) =>
-    (file.provider_metadata as { videoOptimizer?: { status?: string } } | undefined)
+    (file.provider_metadata as { videoOptimizer?: { status?: string; choice?: string } } | undefined)
       ?.videoOptimizer;
 
   const runJob = async (jobId: string) => {
@@ -302,6 +302,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return;
       }
 
+      const optimizerMeta = getOptimizerMeta(file);
+      const resizeMode =
+        optimizerMeta?.choice === 'global' ? 'fit-within' : 'exact';
+
       const inputPath = await resolveInputPath(job.fileId);
 
       if (!inputPath) {
@@ -318,6 +322,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         jobId,
         inputPath,
         settings,
+        resizeMode,
         onProgress: (progress, stage) => {
           void updateJob(jobId, { status: 'processing', progress, stage });
 

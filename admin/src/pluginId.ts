@@ -42,6 +42,7 @@ export interface GlobalOptimizationSettings {
   audioMode: AudioMode;
   audioBitrate: string;
   maxConcurrentJobs: number;
+  maxFfmpegThreads: number;
 }
 
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
@@ -63,9 +64,13 @@ export interface VideoOptimizerJob {
 export const getTranslationKey = (key: string) => `${PLUGIN_ID}.${key}`;
 
 export const MAX_CONCURRENT_JOBS_LIMIT = 32;
+export const MAX_FFMPEG_THREADS_LIMIT = 8;
 
 export const clampMaxConcurrentJobs = (value: number) =>
   Math.min(MAX_CONCURRENT_JOBS_LIMIT, Math.max(1, Math.round(value)));
+
+export const clampMaxFfmpegThreads = (value: number) =>
+  Math.min(MAX_FFMPEG_THREADS_LIMIT, Math.max(1, Math.round(value)));
 
 export const codecForFormat = (format: VideoFormat): VideoCodec =>
   format === 'webm' ? 'vp9' : 'h264';

@@ -115,7 +115,7 @@ export const openMediaLibraryEditor = (
   draftPreference = createDefaultPreference();
 
   if (draftPreference.choice === 'custom') {
-    draftPreference.custom = createCustomFromGlobal();
+    draftPreference.custom = createCustomForMediaLibraryFile();
   }
 
   notify();
@@ -138,7 +138,7 @@ export const setMediaLibraryDraftChoice = (choice: AssetOptimizationPreference['
     choice,
     custom:
       choice === 'custom'
-        ? draftPreference.custom ?? createCustomFromGlobal()
+        ? draftPreference.custom ?? createCustomForMediaLibraryFile()
         : undefined,
   };
   notify();
@@ -215,8 +215,8 @@ export const createCustomForMediaLibraryFile = (): OptimizationSettings => {
 
   return {
     ...base,
-    maxWidth: width && width < base.maxWidth ? width : base.maxWidth,
-    maxHeight: height && height < base.maxHeight ? height : base.maxHeight,
+    maxWidth: width ?? base.maxWidth,
+    maxHeight: height ?? base.maxHeight,
   };
 };
 

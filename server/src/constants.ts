@@ -35,9 +35,13 @@ export const FFMPEG_PRESETS: FfmpegPreset[] = [
 export const JOB_STATUSES: JobStatus[] = ['queued', 'processing', 'completed', 'failed'];
 
 export const MAX_CONCURRENT_JOBS_LIMIT = 32;
+export const MAX_FFMPEG_THREADS_LIMIT = 8;
 
 export const clampMaxConcurrentJobs = (value: number) =>
   Math.min(MAX_CONCURRENT_JOBS_LIMIT, Math.max(1, Math.round(value)));
+
+export const clampMaxFfmpegThreads = (value: number) =>
+  Math.min(MAX_FFMPEG_THREADS_LIMIT, Math.max(1, Math.round(value)));
 
 export interface OptimizationSettings {
   defaultFormat: VideoFormat;

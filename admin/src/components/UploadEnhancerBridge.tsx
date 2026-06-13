@@ -16,13 +16,14 @@ import { getTranslationKey } from '../pluginId';
 import {
   closeAssetEditor,
   createCustomForAsset,
-  createCustomFromGlobal,
   getAssetPreference,
   getDraftPreference,
   getEditingAssetId,
+  getSourceDimensionsForAsset,
   getUploadAssetCards,
   getUploadDialogElement,
   openAssetEditor,
+  resolveCustomSettingsForAsset,
   saveAssetEditor,
   setDraftChoice,
   setDraftCustom,
@@ -41,6 +42,11 @@ export const UploadEnhancerBridge = () => {
   const dialogElement = useSyncExternalStore(subscribeUploadAssets, getUploadDialogElement);
 
   const editingCard = cards.find((card) => card.assetId === editingAssetId);
+  const sourceDimensions = editingAssetId ? getSourceDimensionsForAsset(editingAssetId) : undefined;
+  const resolvedCustom =
+    editingAssetId && draftPreference.choice === 'custom'
+      ? resolveCustomSettingsForAsset(editingAssetId, draftPreference.custom)
+      : draftPreference.custom;
 
   useEffect(() => {
     if (!dialogElement || !editingAssetId) {
@@ -133,13 +139,10 @@ export const UploadEnhancerBridge = () => {
               {draftPreference.choice === 'custom' && (
                 <Box background="neutral100" padding={5} hasRadius>
                   <OptimizationCustomForm
-                    value={
-                      draftPreference.custom ??
-                      (editingAssetId ? createCustomForAsset(editingAssetId) : createCustomFromGlobal())
-                    }
+                    value={resolvedCustom ?? createCustomForAsset(editingAssetId)}
                     onChange={setDraftCustom}
-                    sourceWidth={editingCard?.width}
-                    sourceHeight={editingCard?.height}
+                    sourceWidth={editingCard?.width ?? sourceDimensions?.width}
+                    sourceHeight={editingCard?.height ?? sourceDimensions?.height}
                   />
                 </Box>
               )}

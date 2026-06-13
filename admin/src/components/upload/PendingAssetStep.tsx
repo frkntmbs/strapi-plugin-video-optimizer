@@ -7,8 +7,9 @@ import { OptimizationChoicePicker } from '../OptimizationChoicePicker';
 import { OptimizationCustomForm } from '../OptimizationVideoFields';
 import {
   createCustomForAsset,
-  createCustomFromGlobal,
   getAssetPreference,
+  getSourceDimensionsForAsset,
+  resolveCustomSettingsForAsset,
   type UploadAssetEntry,
 } from '../../utils/uploadAssetStore';
 import { getTranslationKey, type AssetOptimizationPreference } from '../../pluginId';
@@ -26,12 +27,15 @@ export const PendingAssetStep = ({
 }: PendingAssetStepProps) => {
   const { formatMessage } = useIntl();
 
+  const sourceDimensions = getSourceDimensionsForAsset(asset.assetId);
+  const resolvedCustom = resolveCustomSettingsForAsset(asset.assetId, preference.custom);
+
   const handleChoiceChange = (choice: AssetOptimizationPreference['choice']) => {
     onPreferenceChange({
       choice,
       custom:
         choice === 'custom'
-          ? preference.custom ?? createCustomForAsset(asset.assetId)
+          ? resolveCustomSettingsForAsset(asset.assetId, preference.custom)
           : undefined,
     });
   };
@@ -54,10 +58,10 @@ export const PendingAssetStep = ({
 
         {preference.choice === 'custom' && (
           <OptimizationCustomForm
-            value={preference.custom ?? createCustomForAsset(asset.assetId)}
+            value={resolvedCustom}
             onChange={(custom) => onPreferenceChange({ choice: 'custom', custom })}
-            sourceWidth={asset.width}
-            sourceHeight={asset.height}
+            sourceWidth={asset.width ?? sourceDimensions?.width}
+            sourceHeight={asset.height ?? sourceDimensions?.height}
           />
         )}
 

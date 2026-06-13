@@ -1,3 +1,4 @@
+import { DEFAULT_GLOBAL_SETTINGS, mergeGlobalSettings } from '../defaultGlobalSettings';
 import type {
   AssetOptimizationPreference,
   GlobalOptimizationSettings,
@@ -16,19 +17,6 @@ export interface UploadAssetEntry {
   actionsContainer: HTMLElement;
   footerHost?: HTMLElement;
 }
-
-const DEFAULT_GLOBAL_SETTINGS: GlobalOptimizationSettings = {
-  defaultChoice: 'original',
-  defaultFormat: 'mp4',
-  videoCodec: 'h264',
-  crf: 23,
-  preset: 'medium',
-  maxWidth: 1920,
-  maxHeight: 1080,
-  audioMode: 'compress',
-  audioBitrate: '128k',
-  maxConcurrentJobs: 1,
-};
 
 let globalSettings: GlobalOptimizationSettings = { ...DEFAULT_GLOBAL_SETTINGS };
 const assetPreferencesById = new Map<string, AssetOptimizationPreference>();
@@ -80,8 +68,8 @@ export const createCustomFromGlobal = (): OptimizationSettings => ({
   videoCodec: globalSettings.videoCodec,
   crf: globalSettings.crf,
   preset: globalSettings.preset,
-  maxWidth: globalSettings.maxWidth,
-  maxHeight: globalSettings.maxHeight,
+  maxWidth: 0,
+  maxHeight: 0,
   audioMode: globalSettings.audioMode,
   audioBitrate: globalSettings.audioBitrate,
 });
@@ -92,10 +80,45 @@ export const createCustomForAsset = (assetId: string): OptimizationSettings => {
 
   return {
     ...base,
-    maxWidth: dimensions?.width && dimensions.width < base.maxWidth ? dimensions.width : base.maxWidth,
-    maxHeight:
-      dimensions?.height && dimensions.height < base.maxHeight ? dimensions.height : base.maxHeight,
+    maxWidth: dimensions?.width ?? base.maxWidth,
+    maxHeight: dimensions?.height ?? base.maxHeight,
   };
+};
+
+export const resolveCustomSettingsForAsset = (
+  assetId: string,
+  current?: OptimizationSettings
+): OptimizationSettings => {
+  const seeded = createCustomForAsset(assetId);
+  const base = current ?? seeded;
+
+  return {
+    ...base,
+    maxWidth: base.maxWidth > 0 ? base.maxWidth : seeded.maxWidth,
+    maxHeight: base.maxHeight > 0 ? base.maxHeight : seeded.maxHeight,
+  };
+};
+
+export const getSourceDimensionsForAsset = (assetId: string) => assetDimensionsById.get(assetId);
+
+export const updateAssetDimensions = (
+  assetId: string,
+  dimensions: { width: number; height: number }
+) => {
+  assetDimensionsById.set(assetId, dimensions);
+
+  const index = cards.findIndex((entry) => entry.assetId === assetId);
+
+  if (index >= 0) {
+    cards[index] = {
+      ...cards[index],
+      width: dimensions.width,
+      height: dimensions.height,
+    };
+    cardsSnapshot = cards.slice();
+  }
+
+  notify();
 };
 
 export const getAssetDimensions = (assetId: string) => assetDimensionsById.get(assetId);
@@ -157,7 +180,7 @@ export const openAssetEditor = (assetId: string) => {
   draftPreference = structuredClone(getAssetPreference(assetId));
 
   if (draftPreference.choice === 'custom') {
-    draftPreference.custom = createCustomForAsset(assetId);
+    draftPreference.custom = resolveCustomSettingsForAsset(assetId, draftPreference.custom);
   }
 
   notify();
@@ -178,7 +201,7 @@ export const setDraftChoice = (choice: OptimizationChoice) => {
     choice,
     custom:
       choice === 'custom'
-        ? draftPreference.custom ?? createCustomForAsset(editingAssetId ?? '')
+        ? resolveCustomSettingsForAsset(editingAssetId ?? '', draftPreference.custom)
         : undefined,
   };
   notify();

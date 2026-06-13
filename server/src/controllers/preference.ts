@@ -4,9 +4,11 @@ import {
   FFMPEG_PRESETS,
   OPTIMIZATION_CHOICES,
   MAX_CONCURRENT_JOBS_LIMIT,
+  MAX_FFMPEG_THREADS_LIMIT,
   VIDEO_CODECS,
   VIDEO_FORMATS,
   clampMaxConcurrentJobs,
+  clampMaxFfmpegThreads,
   codecForFormat,
   type AudioMode,
   type FfmpegPreset,
@@ -68,6 +70,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       audioMode: settings.audioMode,
       audioBitrate: settings.audioBitrate,
       maxConcurrentJobs: settings.maxConcurrentJobs,
+      maxFfmpegThreads: settings.maxFfmpegThreads,
     };
   },
 
@@ -123,6 +126,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       audioMode,
       audioBitrate,
       maxConcurrentJobs,
+      maxFfmpegThreads,
     } = ctx.request.body ?? {};
 
     if (defaultChoice !== undefined && !isValidChoice(defaultChoice)) {
@@ -164,6 +168,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       return ctx.badRequest(`maxConcurrentJobs must be between 1 and ${MAX_CONCURRENT_JOBS_LIMIT}`);
     }
 
+    if (
+      maxFfmpegThreads !== undefined &&
+      clampMaxFfmpegThreads(Number(maxFfmpegThreads)) !== Number(maxFfmpegThreads)
+    ) {
+      return ctx.badRequest(`maxFfmpegThreads must be between 1 and ${MAX_FFMPEG_THREADS_LIMIT}`);
+    }
+
     const payload: Record<string, unknown> = {};
 
     if (defaultChoice !== undefined) payload.defaultChoice = defaultChoice;
@@ -181,6 +192,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (audioMode !== undefined) payload.audioMode = audioMode;
     if (audioBitrate !== undefined) payload.audioBitrate = String(audioBitrate);
     if (maxConcurrentJobs !== undefined) payload.maxConcurrentJobs = Number(maxConcurrentJobs);
+    if (maxFfmpegThreads !== undefined) payload.maxFfmpegThreads = Number(maxFfmpegThreads);
 
     await strapi.plugin('video-optimizer').service('preference').setGlobalSettings(payload);
 

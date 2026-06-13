@@ -17,6 +17,7 @@ import {
   type VideoFormat,
 } from '../constants';
 import type { PluginConfig } from '../config';
+import { DEFAULT_PLUGIN_CONFIG, normalizePluginConfig } from '../config/defaults';
 
 const GLOBAL_SETTINGS_KEY = 'global-settings';
 const JOBS_STORE_KEY = 'jobs';
@@ -82,43 +83,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async getGlobalSettings(): Promise<PluginConfig> {
-    const configDefaults = strapi.plugin(PLUGIN_ID).config as PluginConfig;
+    const pluginConfig = strapi.plugin(PLUGIN_ID).config as Partial<PluginConfig>;
     const stored = await strapi.store({
       type: 'plugin',
       name: PLUGIN_ID,
       key: GLOBAL_SETTINGS_KEY,
     }).get<Partial<PluginConfig>>();
 
-    const merged = {
-      ...configDefaults,
-      ...(stored ?? {}),
-    };
+    return normalizePluginConfig(DEFAULT_PLUGIN_CONFIG, pluginConfig, stored ?? undefined);
+  },
 
-    if (!isValidChoice(merged.defaultChoice)) {
-      merged.defaultChoice = configDefaults.defaultChoice;
+  async ensureGlobalSettingsDefaults() {
+    const store = strapi.store({
+      type: 'plugin',
+      name: PLUGIN_ID,
+      key: GLOBAL_SETTINGS_KEY,
+    });
+    const stored = await store.get<Partial<PluginConfig>>();
+
+    if (!stored || Object.keys(stored).length === 0) {
+      const pluginConfig = strapi.plugin(PLUGIN_ID).config as Partial<PluginConfig>;
+      const defaults = normalizePluginConfig(DEFAULT_PLUGIN_CONFIG, pluginConfig);
+      await store.set({ value: defaults });
     }
-
-    if (!isValidFormat(merged.defaultFormat)) {
-      merged.defaultFormat = configDefaults.defaultFormat;
-    }
-
-    if (!isValidCodec(merged.videoCodec)) {
-      merged.videoCodec = codecForFormat(merged.defaultFormat);
-    }
-
-    if (!isValidAudioMode(merged.audioMode)) {
-      merged.audioMode = configDefaults.audioMode;
-    }
-
-    if (!isValidPreset(merged.preset)) {
-      merged.preset = configDefaults.preset;
-    }
-
-    merged.maxConcurrentJobs = clampMaxConcurrentJobs(
-      merged.maxConcurrentJobs ?? configDefaults.maxConcurrentJobs
-    );
-
-    return merged;
   },
 
   async setGlobalSettings(settings: Partial<PluginConfig>) {

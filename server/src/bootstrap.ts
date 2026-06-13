@@ -68,9 +68,14 @@ const normalizeCustomSettings = (
     videoCodec: isValidCodec(value.videoCodec) ? value.videoCodec : codecForFormat(defaultFormat),
     crf: typeof value.crf === 'number' ? value.crf : Number(value.crf ?? global.crf),
     preset: isValidPreset(value.preset) ? value.preset : global.preset,
-    maxWidth: typeof value.maxWidth === 'number' ? value.maxWidth : Number(value.maxWidth ?? global.maxWidth),
+    maxWidth:
+      typeof value.maxWidth === 'number' && value.maxWidth >= 1
+        ? value.maxWidth
+        : global.maxWidth,
     maxHeight:
-      typeof value.maxHeight === 'number' ? value.maxHeight : Number(value.maxHeight ?? global.maxHeight),
+      typeof value.maxHeight === 'number' && value.maxHeight >= 1
+        ? value.maxHeight
+        : global.maxHeight,
     audioMode: isValidAudioMode(value.audioMode) ? value.audioMode : global.audioMode,
     audioBitrate:
       typeof value.audioBitrate === 'string' ? value.audioBitrate : String(value.audioBitrate ?? global.audioBitrate),
@@ -367,5 +372,6 @@ export default async ({ strapi }: { strapi: Core.Strapi }) => {
     void jobQueue.cancelJobsForFile(fileId);
   });
 
+  await strapi.plugin(PLUGIN_ID).service('preference').ensureGlobalSettingsDefaults();
   await jobQueue.clearJobsOnStartup();
 };

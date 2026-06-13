@@ -66,6 +66,11 @@ export const MediaLibraryCardActionsBridge = () => {
 
   const canEnqueue = draftPreference.choice !== 'original';
 
+  const resolvedCustom =
+    draftPreference.choice === 'custom'
+      ? draftPreference.custom ?? createCustomForMediaLibraryFile()
+      : undefined;
+
   const editorPanel =
     editingFileId !== null ? (
       <Box
@@ -144,7 +149,7 @@ export const MediaLibraryCardActionsBridge = () => {
               {draftPreference.choice === 'custom' && (
                 <Box background="neutral100" padding={5} hasRadius>
                   <OptimizationCustomForm
-                    value={draftPreference.custom ?? createCustomForMediaLibraryFile()}
+                    value={resolvedCustom ?? createCustomForMediaLibraryFile()}
                     onChange={setMediaLibraryDraftCustom}
                     sourceWidth={editingDimensions?.width}
                     sourceHeight={editingDimensions?.height}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Field, Grid, SingleSelect, SingleSelectOption, TextInput, Typography } from '@strapi/design-system';
 import { useIntl } from 'react-intl';
 import {
@@ -178,6 +178,22 @@ export const OptimizationCustomForm = ({
   const update = (patch: Partial<OptimizationSettings>) => {
     onChange({ ...value, ...patch });
   };
+
+  useEffect(() => {
+    if (!sourceWidth || !sourceHeight) {
+      return;
+    }
+
+    if (value.maxWidth > 0 && value.maxHeight > 0) {
+      return;
+    }
+
+    onChange({
+      ...value,
+      maxWidth: sourceWidth,
+      maxHeight: sourceHeight,
+    });
+  }, [sourceWidth, sourceHeight]);
 
   return (
     <Grid.Root gap={4}>

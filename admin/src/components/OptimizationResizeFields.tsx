@@ -10,6 +10,7 @@ interface OptimizationResizeFieldsProps {
   onChange: (patch: Partial<OptimizationSettings>) => void;
   disabled?: boolean;
   namePrefix?: string;
+  variant?: 'custom' | 'global';
 }
 
 export const OptimizationResizeFields = ({
@@ -19,6 +20,7 @@ export const OptimizationResizeFields = ({
   onChange,
   disabled = false,
   namePrefix = '',
+  variant = 'custom',
 }: OptimizationResizeFieldsProps) => {
   const { formatMessage } = useIntl();
 
@@ -69,7 +71,7 @@ export const OptimizationResizeFields = ({
           <Field.Label>
             {formatMessage({
               id: getTranslationKey('settings.resize.width'),
-              defaultMessage: 'Max width (px)',
+              defaultMessage: 'Width (px)',
             })}
           </Field.Label>
           <TextInput
@@ -87,7 +89,7 @@ export const OptimizationResizeFields = ({
           <Field.Label>
             {formatMessage({
               id: getTranslationKey('settings.resize.height'),
-              defaultMessage: 'Max height (px)',
+              defaultMessage: 'Height (px)',
             })}
           </Field.Label>
           <TextInput
@@ -103,9 +105,13 @@ export const OptimizationResizeFields = ({
       <Grid.Item col={12} direction="column" alignItems="stretch">
         <Typography variant="pi" textColor="neutral600">
           {formatMessage({
-            id: getTranslationKey('settings.resize.hint'),
+            id: getTranslationKey(
+              variant === 'global' ? 'settings.resize.globalHint' : 'settings.resize.hint'
+            ),
             defaultMessage:
-              'Video is scaled down if larger than these limits while preserving aspect ratio.',
+              variant === 'global'
+                ? 'Videos larger than this are scaled down while preserving aspect ratio.'
+                : 'Defaults to the original video size. Change either value to resize; the other updates to keep aspect ratio.',
           })}
         </Typography>
       </Grid.Item>

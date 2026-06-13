@@ -15,6 +15,7 @@ export interface UploadAssetRecord {
 let queryClientRef: QueryClient | null = null;
 let fetchedAssets: UploadAssetRecord[] = [];
 let fetchPromise: Promise<UploadAssetRecord[]> | null = null;
+let uploadAssetsFetchSettled = false;
 
 export const registerMediaLibraryQueryClientBridge = (queryClient: QueryClient | null) => {
   queryClientRef = queryClient;
@@ -22,20 +23,28 @@ export const registerMediaLibraryQueryClientBridge = (queryClient: QueryClient |
 
 export const getMediaLibraryQueryClient = () => queryClientRef;
 
-const readAssetsFromQueryCache = (): UploadAssetRecord[] => {
+const readAssetsFromQueryCache = (): UploadAssetRecord[] | null => {
   if (!queryClientRef) {
-    return [];
+    return null;
   }
 
   for (const query of queryClientRef.getQueryCache().findAll([UPLOAD_PLUGIN_ID, 'assets'])) {
-    const data = query.state.data as { results?: UploadAssetRecord[] } | undefined;
+    if (query.state.status !== 'success') {
+      continue;
+    }
 
-    if (Array.isArray(data?.results)) {
-      return data.results;
+    const data = query.state.data as UploadAssetRecord[] | { results?: UploadAssetRecord[] } | undefined;
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && typeof data === 'object' && 'results' in data) {
+      return Array.isArray(data.results) ? data.results : [];
     }
   }
 
-  return [];
+  return null;
 };
 
 const readAssetsFromUploadApi = async (): Promise<UploadAssetRecord[]> => {
@@ -58,7 +67,7 @@ const readAssetsFromUploadApi = async (): Promise<UploadAssetRecord[]> => {
 export const getUploadAssetsFromCache = (): UploadAssetRecord[] => {
   const fromQuery = readAssetsFromQueryCache();
 
-  if (fromQuery.length) {
+  if (fromQuery !== null) {
     return fromQuery;
   }
 
@@ -68,12 +77,13 @@ export const getUploadAssetsFromCache = (): UploadAssetRecord[] => {
 export const ensureUploadAssets = async (): Promise<UploadAssetRecord[]> => {
   const fromQuery = readAssetsFromQueryCache();
 
-  if (fromQuery.length) {
+  if (fromQuery !== null) {
     fetchedAssets = fromQuery;
+    uploadAssetsFetchSettled = true;
     return fromQuery;
   }
 
-  if (fetchedAssets.length) {
+  if (uploadAssetsFetchSettled) {
     return fetchedAssets;
   }
 
@@ -84,6 +94,7 @@ export const ensureUploadAssets = async (): Promise<UploadAssetRecord[]> => {
   fetchPromise = (async () => {
     try {
       fetchedAssets = await readAssetsFromUploadApi();
+      uploadAssetsFetchSettled = true;
       return fetchedAssets;
     } catch {
       return fetchedAssets;
@@ -98,4 +109,5 @@ export const ensureUploadAssets = async (): Promise<UploadAssetRecord[]> => {
 export const invalidateFetchedUploadAssets = () => {
   fetchedAssets = [];
   fetchPromise = null;
+  uploadAssetsFetchSettled = false;
 };

@@ -22,7 +22,6 @@ import { syncMediaLibraryCardActions } from './initMediaLibraryCardActions';
 
 let progressRoot: Root | null = null;
 let progressHost: HTMLElement | null = null;
-let pollTimer: ReturnType<typeof setInterval> | null = null;
 let domObserver: MutationObserver | null = null;
 let domObserverTimer: ReturnType<typeof setTimeout> | null = null;
 let started = false;
@@ -210,10 +209,6 @@ export const initMediaLibraryProgress = () => {
 
   const boot = () => {
     syncProgress();
-
-    pollTimer = setInterval(() => {
-      syncProgress();
-    }, 2000);
   };
 
   if (document.readyState === 'loading') {

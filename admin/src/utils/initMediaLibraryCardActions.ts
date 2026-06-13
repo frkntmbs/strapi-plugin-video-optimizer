@@ -7,10 +7,10 @@ import {
 import { setMediaLibraryCards, type MediaLibraryCardEntry } from './mediaLibraryCardStore';
 import { ensureUploadAssets, type UploadAssetRecord } from './mediaLibraryQueryBridge';
 import { isMediaLibraryPath } from './mediaLibraryRoute';
+import { extractAssetDimensions } from './extractAssetDimensions';
 
 let domObserver: MutationObserver | null = null;
 let domObserverTimer: ReturnType<typeof setTimeout> | null = null;
-let pollTimer: ReturnType<typeof setInterval> | null = null;
 let started = false;
 let syncInFlight = false;
 
@@ -117,16 +117,6 @@ const ensureHost = (
   return host;
 };
 
-const extractDimensions = (card: Element) => {
-  const video = card.querySelector('video');
-
-  if (video instanceof HTMLVideoElement && video.videoWidth > 0 && video.videoHeight > 0) {
-    return { width: video.videoWidth, height: video.videoHeight };
-  }
-
-  return undefined;
-};
-
 const cleanupCardActionHosts = (activeFileIds: Set<number>) => {
   for (const host of document.querySelectorAll('[data-video-optimizer-ml-optimize-host]')) {
     const fileId = Number(host.getAttribute('data-video-optimizer-ml-optimize-host'));
@@ -205,7 +195,7 @@ const collectCardActions = (uploadAssets: UploadAssetRecord[]): MediaLibraryCard
       fileId
     );
 
-    const dimensions = extractDimensions(card);
+    const dimensions = extractAssetDimensions(card);
 
     entries.push({
       fileId,
@@ -222,6 +212,12 @@ const collectCardActions = (uploadAssets: UploadAssetRecord[]): MediaLibraryCard
 
 const syncDomObserver = () => {
   if (!isMediaLibraryRoute()) {
+    domObserver?.disconnect();
+    domObserver = null;
+    return;
+  }
+
+  if (!collectVideoCards().length) {
     domObserver?.disconnect();
     domObserver = null;
     return;
@@ -266,6 +262,17 @@ const syncCardActions = async () => {
       return;
     }
 
+    const videoCards = collectVideoCards();
+
+    if (!videoCards.length) {
+      cleanupCardActionHosts(new Set());
+      setMediaLibraryCards([]);
+      domObserver?.disconnect();
+      domObserver = null;
+      return;
+    }
+
+    prepareCardsForMatching(videoCards);
     const uploadAssets = await ensureUploadAssets();
     const entries = collectCardActions(uploadAssets);
     cleanupCardActionHosts(new Set(entries.map((entry) => entry.fileId)));
@@ -288,11 +295,9 @@ export const initMediaLibraryCardActions = () => {
   started = true;
 
   const boot = () => {
-    syncCardActions();
-
-    pollTimer = setInterval(() => {
-      syncCardActions();
-    }, 2000);
+    if (isMediaLibraryRoute()) {
+      void syncCardActions();
+    }
   };
 
   if (document.readyState === 'loading') {

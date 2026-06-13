@@ -5,7 +5,8 @@ import { Layouts, Page, useFetchClient, useNotification, useRBAC } from "@strapi
 import { useIntl } from "react-intl";
 import { OptimizationResizeFields } from "../components/OptimizationResizeFields";
 import { OptimizationVideoFields } from "../components/OptimizationVideoFields";
-import { getTranslationKey, PLUGIN_ID, MAX_CONCURRENT_JOBS_LIMIT, clampMaxConcurrentJobs, type GlobalOptimizationSettings, type OptimizationChoice } from "../pluginId";
+import { DEFAULT_GLOBAL_SETTINGS, mergeGlobalSettings } from "../defaultGlobalSettings";
+import { getTranslationKey, PLUGIN_ID, MAX_CONCURRENT_JOBS_LIMIT, MAX_FFMPEG_THREADS_LIMIT, clampMaxConcurrentJobs, clampMaxFfmpegThreads, type GlobalOptimizationSettings, type OptimizationChoice } from "../pluginId";
 
 const SETTINGS_READ = [{ action: "plugin::video-optimizer.settings.read", subject: null }];
 const SETTINGS_UPDATE = [{ action: "plugin::video-optimizer.settings.update", subject: null }];
@@ -22,18 +23,7 @@ export const SettingsPage = () => {
 	const canReadGlobal = readActions.canRead;
 	const canUpdateGlobal = updateActions.canUpdate;
 
-	const [globalSettings, setGlobalSettings] = useState<GlobalOptimizationSettings>({
-		defaultChoice: "original",
-		defaultFormat: "mp4",
-		videoCodec: "h264",
-		crf: 23,
-		preset: "medium",
-		maxWidth: 1920,
-		maxHeight: 1080,
-		audioMode: "compress",
-		audioBitrate: "128k",
-		maxConcurrentJobs: 1,
-	});
+	const [globalSettings, setGlobalSettings] = useState<GlobalOptimizationSettings>(DEFAULT_GLOBAL_SETTINGS);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -46,7 +36,7 @@ export const SettingsPage = () => {
 
 			try {
 				const { data: settings } = await get(`/${PLUGIN_ID}/settings`);
-				setGlobalSettings(settings);
+				setGlobalSettings(mergeGlobalSettings(settings));
 			} catch {
 				toggleNotification({
 					type: "danger",
@@ -153,7 +143,7 @@ export const SettingsPage = () => {
 							<Grid.Root gap={6}>
 								<OptimizationVideoFields value={globalSettings} onChange={(patch) => setGlobalSettings((prev) => ({ ...prev, ...patch }))} disabled={!canUpdateGlobal || isSaving} namePrefix="global" />
 
-								<OptimizationResizeFields value={globalSettings} onChange={(patch) => setGlobalSettings((prev) => ({ ...prev, ...patch }))} disabled={!canUpdateGlobal || isSaving} namePrefix="global" />
+								<OptimizationResizeFields value={globalSettings} onChange={(patch) => setGlobalSettings((prev) => ({ ...prev, ...patch }))} disabled={!canUpdateGlobal || isSaving} namePrefix="global" variant="global" />
 							</Grid.Root>
 						</Box>
 
@@ -183,6 +173,25 @@ export const SettingsPage = () => {
 											disabled={!canUpdateGlobal || isSaving}
 										/>
 										<Field.Hint>{formatMessage({ id: getTranslationKey("settings.global.maxConcurrentJobsHint") })}</Field.Hint>
+									</Field.Root>
+								</Grid.Item>
+								<Grid.Item col={6} xs={12} direction="column" alignItems="stretch">
+									<Field.Root name="maxFfmpegThreads">
+										<Field.Label>{formatMessage({ id: getTranslationKey("settings.global.maxFfmpegThreads") })}</Field.Label>
+										<TextInput
+											type="number"
+											min={1}
+											max={MAX_FFMPEG_THREADS_LIMIT}
+											value={String(globalSettings.maxFfmpegThreads)}
+											onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+												setGlobalSettings((prev) => ({
+													...prev,
+													maxFfmpegThreads: clampMaxFfmpegThreads(Number(event.target.value) || 1),
+												}))
+											}
+											disabled={!canUpdateGlobal || isSaving}
+										/>
+										<Field.Hint>{formatMessage({ id: getTranslationKey("settings.global.maxFfmpegThreadsHint") })}</Field.Hint>
 									</Field.Root>
 								</Grid.Item>
 							</Grid.Root>
