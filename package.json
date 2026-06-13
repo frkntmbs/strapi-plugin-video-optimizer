@@ -1,0 +1,100 @@
+{
+  "name": "@frkntmbs/strapi-plugin-video-optimizer",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "1.0.0",
+  "description": "Per-video optimization controls for the Strapi Media Library upload flow with async FFmpeg processing.",
+  "license": "MIT",
+  "keywords": [
+    "strapi",
+    "strapi-plugin",
+    "plugin",
+    "video",
+    "optimizer",
+    "ffmpeg",
+    "upload",
+    "media-library",
+    "h264",
+    "webm"
+  ],
+  "author": "frkntmbs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frkntmbs/strapi-plugin-video-optimizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/frkntmbs/strapi-plugin-video-optimizer/issues"
+  },
+  "homepage": "https://github.com/frkntmbs/strapi-plugin-video-optimizer#readme",
+  "files": [
+    "dist",
+    "admin",
+    "server",
+    "strapi-admin.js",
+    "strapi-server.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "verify": "strapi-plugin verify",
+    "prepublishOnly": "npm run build && npm run verify",
+    "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link"
+  },
+  "exports": {
+    "./strapi-admin": {
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./strapi-server": {
+      "source": "./server/index.js",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3"
+  },
+  "devDependencies": {
+    "@strapi/sdk-plugin": "^6.1.1",
+    "@strapi/strapi": "^5.48.0",
+    "@strapi/typescript-utils": "^5.48.0",
+    "@tanstack/react-query": "^5.64.0",
+    "@types/fluent-ffmpeg": "^2.1.27",
+    "esbuild-register": "^3.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.6.2",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.1.0",
+    "typescript": "^5.7.0",
+    "yalc": "^1.0.0-pre.53"
+  },
+  "peerDependencies": {
+    "@strapi/design-system": "^2.0.0",
+    "@strapi/icons": "^2.0.0",
+    "@strapi/strapi": "^5.0.0",
+    "@strapi/utils": "^5.0.0",
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0 <=24.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "name": "video-optimizer",
+    "displayName": "Video Optimizer",
+    "description": "Per-video optimization controls for Media Library uploads with async FFmpeg processing",
+    "kind": "plugin"
+  }
+}
