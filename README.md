@@ -23,6 +23,8 @@ Strapi's Media Library uploads videos as-is unless you add custom server logic. 
 
 Encoding runs **asynchronously in the background** — the original file appears in the Media Library immediately, and FFmpeg replaces it when the job completes.
 
+> **Server notice:** Video encoding is CPU-intensive. Large files can consume significant server resources. Use `maxConcurrentJobs` and `maxFfmpegThreads` on small VPS hosts. This plugin is recommended for server/VPS environments where FFmpeg is available.
+
 Upload UX mirrors [`strapi-plugin-image-optimizer`](https://github.com/frkntmbs/strapi-plugin-image-optimizer); image processing is replaced with FFmpeg-based video encoding.
 
 ## Screenshots
@@ -104,8 +106,40 @@ flowchart LR
 - [Strapi](https://strapi.io) **5.x**
 - Node.js **20–24**
 - `@strapi/plugin-upload` (included with Strapi)
+- **FFmpeg** — required for video encoding (see [FFmpeg requirement](#ffmpeg-requirement) below)
 
-FFmpeg is bundled via [`ffmpeg-static`](https://www.npmjs.com/package/ffmpeg-static). If unavailable, the plugin falls back to a system `ffmpeg` binary on `PATH`.
+## FFmpeg requirement
+
+This plugin requires an FFmpeg executable at runtime. Resolution order:
+
+1. [`ffmpeg-static`](https://www.npmjs.com/package/ffmpeg-static) — installed as an npm dependency and used when available (may pull platform-specific FFmpeg binaries into `node_modules`)
+2. **System FFmpeg** — if `ffmpeg-static` is unavailable, the plugin falls back to an `ffmpeg` binary on the host `PATH`
+
+You are responsible for ensuring your FFmpeg installation and use comply with the applicable **LGPL/GPL** license terms.
+
+### Install FFmpeg on the host (recommended for Docker/production)
+
+**macOS**
+
+```bash
+brew install ffmpeg
+```
+
+**Ubuntu / Debian**
+
+```bash
+sudo apt update && sudo apt install ffmpeg
+```
+
+**Docker**
+
+Install FFmpeg in your Strapi application image, for example:
+
+```dockerfile
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+```
+
+Or use a base image that already includes FFmpeg.
 
 ## Installation
 
@@ -164,6 +198,8 @@ All options can be set in `config/plugins.ts` (defaults) and overridden from the
 | `maxFfmpegThreads` | `1–8` | `2` | Max CPU threads per encode job (use `1–2` on weak VPS) |
 
 ### Server resource tuning
+
+Large videos can consume significant CPU and memory during encoding. On small VPS hosts, keep concurrency low:
 
 | Setting | Weak VPS suggestion | Notes |
 |---------|---------------------|-------|
@@ -276,6 +312,20 @@ In your Strapi app:
 npx yalc add --link @frkntmbs/strapi-plugin-video-optimizer && npm install
 npm run develop
 ```
+
+## Legal note
+
+This plugin's **source code** is licensed under [MIT](LICENSE).
+
+Video encoding relies on **FFmpeg**, which is licensed under LGPL/GPL. By default, the plugin uses the [`ffmpeg-static`](https://www.npmjs.com/package/ffmpeg-static) npm package, which may install platform-specific FFmpeg binaries as a transitive dependency. When `ffmpeg-static` is unavailable, the plugin uses the FFmpeg executable available on the host system.
+
+Please make sure your FFmpeg installation and use comply with the applicable LGPL/GPL license terms.
+
+## Disclaimer
+
+This is a **community plugin** and is not an official Strapi plugin.
+
+Strapi is a trademark of Strapi Solutions SAS.
 
 ## License
 
