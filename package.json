@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Per-video optimization controls for the Strapi Media Library upload flow with async FFmpeg processing.",
   "license": "MIT",
   "keywords": [
