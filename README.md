@@ -257,7 +257,50 @@ Real-world encode runs on a Strapi 5 project with default plugin settings (`maxC
 
 > **Note:** Optimization controls encoding — it does **not** guarantee a smaller file. Re-encoding an already compressed source at the same resolution may increase size. For size reduction, raise CRF, lower resolution, or stay on H.264 instead of switching to WebM.
 
-_Test results will be added here after benchmark runs (e.g. 4K → 1920 scaling)._
+### Test 1 — `video-2.mp4` (Custom → MP4, downscale)
+
+**Source file**
+
+| Property | Value |
+|----------|-------|
+| File | `video-2.mp4` |
+| Resolution | 1080×1920 (9:16 portrait) |
+| Duration | ~14.2 s |
+| Video codec | H.264 |
+| File size | 43.9 MB (46,009,883 bytes) |
+| Bitrate | ~26 Mbps |
+
+**Optimization profile**
+
+| Setting | Value |
+|---------|-------|
+| Mode | **Custom** |
+| Output format | **MP4 (H.264)** |
+| Output dimensions | **432×768** (exact) |
+
+**Result**
+
+| Metric | Value |
+|--------|-------|
+| Output format | `.mp4` |
+| Output resolution | 432×768 |
+| Output size | 2.8 MB (2,897,316 bytes) |
+| Size change | **−94%** (43.9 MB → 2.8 MB) |
+| Encode time | ~22 s (first progress → completed) |
+| Realtime factor | ~0.63× (14.2 s video in ~22 s on test host) |
+
+**Server log (excerpt)**
+
+```
+[video-optimizer] Job … progress  9% (encoding, mp4)   01:10:44
+[video-optimizer] Job … progress 52% (encoding, mp4)   01:10:55
+[video-optimizer] Job … progress 95% (encoding, mp4)   01:11:06
+[video-optimizer] Job … progress 98% (finalizing, mp4) 01:11:06
+[video-optimizer] File 2 updated in Media Library (45MB → 3MB, .mp4)
+[video-optimizer] Job … completed for file 2 → .mp4 (2897316 bytes)
+```
+
+Downscaling a high-bitrate portrait clip produced a large file-size win. Log MB values are rounded (`Math.round`); actual sizes are in the table above. `ECONNRESET` lines in the server log came from the browser closing preview range requests while encoding continued in the background — the job still completed successfully.
 
 ## Permissions
 
