@@ -253,7 +253,24 @@ While a video is queued or encoding, hover the card and click the **stop** butto
 
 ## Test results
 
-Real-world encode runs on a Strapi 5 project with default plugin settings (`maxConcurrentJobs: 1`, `maxFfmpegThreads: 2`). Results vary by source file, output format, and server CPU.
+Real-world encode runs on a Strapi 5 project. Results vary by source file, output format, and server CPU.
+
+### Test environment
+
+Benchmarks below were captured on a **Hetzner VPS** running Strapi in production-like conditions:
+
+| Component | Value |
+|-----------|-------|
+| Provider | Hetzner |
+| vCPU | 2 |
+| RAM | 4 GB |
+| Strapi | 5.x |
+| FFmpeg | `ffmpeg-static` (npm dependency) |
+| `maxConcurrentJobs` | `1` |
+| `maxFfmpegThreads` | `2` |
+| Default CRF | `23` |
+
+These results reflect a **small VPS** tier — weaker hosts may be slower; `maxConcurrentJobs: 1` and `maxFfmpegThreads: 1–2` are recommended here.
 
 > **Note:** Optimization controls encoding — it does **not** guarantee a smaller file. Re-encoding an already compressed source at the same resolution may increase size. For size reduction, raise CRF, lower resolution, or stay on H.264 instead of switching to WebM.
 
