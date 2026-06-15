@@ -10,6 +10,10 @@ export interface UploadAssetRecord {
   url?: string;
   mime?: string;
   ext?: string;
+  width?: number;
+  height?: number;
+  size?: number;
+  sizeInBytes?: number;
 }
 
 let queryClientRef: QueryClient | null = null;

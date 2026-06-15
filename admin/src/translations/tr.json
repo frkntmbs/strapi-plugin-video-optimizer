@@ -45,6 +45,8 @@
   "choice.global.description": "Settings altındaki global optimizasyon profilini kullanır.",
   "choice.custom": "Özel",
   "choice.custom.description": "Bu video için format ve kalite ayarlarını ayrıca yapılandırın.",
+  "optimization.warning.title": "Bu video zaten iyi optimize edilmiş olabilir",
+  "optimization.warning.description": "Yeniden encode dosya boyutunu düşürmeyebilir, hatta büyütebilir. Olduğu gibi bırakmayı düşünün; daha küçük çıktı için CRF değerini yükseltin veya çözünürlüğü düşürün.",
   "upload.optimization.label": "Optimizasyon",
   "upload.button.label": "Optimizasyon ayarları",
   "upload.modal.title": "Video optimizasyonu",

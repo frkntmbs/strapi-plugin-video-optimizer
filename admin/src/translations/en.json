@@ -45,6 +45,8 @@
   "choice.global.description": "Uses the global optimization profile configured in Settings.",
   "choice.custom": "Custom",
   "choice.custom.description": "Configure format and quality settings specifically for this video.",
+  "optimization.warning.title": "This video may already be well optimized",
+  "optimization.warning.description": "Re-encoding may not reduce file size and can even make it larger. Consider Keep original, or raise CRF / lower resolution if you need a smaller output.",
   "upload.optimization.label": "Optimization",
   "upload.button.label": "Optimization settings",
   "upload.modal.title": "Video optimization",

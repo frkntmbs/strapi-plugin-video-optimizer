@@ -3,12 +3,14 @@ import { Box, Flex, Typography } from '@strapi/design-system';
 import { Sparkle } from '@strapi/icons';
 import { useIntl } from 'react-intl';
 import { AssetOptimizationLabel } from '../AssetOptimizationLabel';
+import { OptimizationBenefitWarning } from '../OptimizationBenefitWarning';
 import { OptimizationChoicePicker } from '../OptimizationChoicePicker';
 import { OptimizationCustomForm } from '../OptimizationVideoFields';
 import {
   createCustomForAsset,
   getAssetPreference,
   getSourceDimensionsForAsset,
+  getSourceMetadataForAsset,
   resolveCustomSettingsForAsset,
   type UploadAssetEntry,
 } from '../../utils/uploadAssetStore';
@@ -28,6 +30,7 @@ export const PendingAssetStep = ({
   const { formatMessage } = useIntl();
 
   const sourceDimensions = getSourceDimensionsForAsset(asset.assetId);
+  const sourceMetadata = getSourceMetadataForAsset(asset.assetId);
   const resolvedCustom = resolveCustomSettingsForAsset(asset.assetId, preference.custom);
 
   const handleChoiceChange = (choice: AssetOptimizationPreference['choice']) => {
@@ -53,6 +56,17 @@ export const PendingAssetStep = ({
         <Typography variant="pi" textColor="neutral600">
           {asset.assetName}
         </Typography>
+
+        <OptimizationBenefitWarning
+          choice={preference.choice}
+          metadata={{
+            width: asset.width ?? sourceMetadata.width ?? sourceDimensions?.width,
+            height: asset.height ?? sourceMetadata.height ?? sourceDimensions?.height,
+            sizeBytes: asset.sizeBytes ?? sourceMetadata.sizeBytes,
+            durationSeconds: asset.durationSeconds ?? sourceMetadata.durationSeconds,
+          }}
+          customSettings={preference.choice === 'custom' ? resolvedCustom : undefined}
+        />
 
         <OptimizationChoicePicker value={preference.choice} onChange={handleChoiceChange} />
 

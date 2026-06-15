@@ -200,8 +200,14 @@ const collectCardActions = (uploadAssets: UploadAssetRecord[]): MediaLibraryCard
     entries.push({
       fileId,
       fileName: asset?.name ?? card.querySelector('[id$="-title"]')?.textContent?.trim() ?? '',
-      width: dimensions?.width,
-      height: dimensions?.height,
+      width: dimensions?.width ?? asset?.width,
+      height: dimensions?.height ?? asset?.height,
+      sizeBytes:
+        typeof asset?.sizeInBytes === 'number'
+          ? asset.sizeInBytes
+          : typeof asset?.size === 'number'
+            ? Math.round(asset.size * 1024)
+            : undefined,
       optimizeHost,
       cancelHost,
     });

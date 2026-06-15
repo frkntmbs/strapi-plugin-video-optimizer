@@ -251,6 +251,14 @@ Configure settings for a single video:
 
 While a video is queued or encoding, hover the card and click the **stop** button to cancel the job. If the file was deleted during encoding, the job is cancelled automatically.
 
+## Test results
+
+Real-world encode runs on a Strapi 5 project with default plugin settings (`maxConcurrentJobs: 1`, `maxFfmpegThreads: 2`). Results vary by source file, output format, and server CPU.
+
+> **Note:** Optimization controls encoding — it does **not** guarantee a smaller file. Re-encoding an already compressed source at the same resolution may increase size. For size reduction, raise CRF, lower resolution, or stay on H.264 instead of switching to WebM.
+
+_Test results will be added here after benchmark runs (e.g. 4K → 1920 scaling)._
+
 ## Permissions
 
 Global settings are protected by admin permissions:

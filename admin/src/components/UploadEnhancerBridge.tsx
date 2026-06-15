@@ -10,6 +10,7 @@ import {
 import { Cross, Sparkle } from '@strapi/icons';
 import { useIntl } from 'react-intl';
 import { AssetOptimizationLabel } from './AssetOptimizationLabel';
+import { OptimizationBenefitWarning } from './OptimizationBenefitWarning';
 import { OptimizationChoicePicker } from './OptimizationChoicePicker';
 import { OptimizationCustomForm } from './OptimizationVideoFields';
 import { getTranslationKey } from '../pluginId';
@@ -20,6 +21,7 @@ import {
   getDraftPreference,
   getEditingAssetId,
   getSourceDimensionsForAsset,
+  getSourceMetadataForAsset,
   getUploadAssetCards,
   getUploadDialogElement,
   openAssetEditor,
@@ -43,6 +45,7 @@ export const UploadEnhancerBridge = () => {
 
   const editingCard = cards.find((card) => card.assetId === editingAssetId);
   const sourceDimensions = editingAssetId ? getSourceDimensionsForAsset(editingAssetId) : undefined;
+  const sourceMetadata = editingAssetId ? getSourceMetadataForAsset(editingAssetId) : {};
   const resolvedCustom =
     editingAssetId && draftPreference.choice === 'custom'
       ? resolveCustomSettingsForAsset(editingAssetId, draftPreference.custom)
@@ -132,6 +135,16 @@ export const UploadEnhancerBridge = () => {
                   {editingCard.assetName}
                 </Typography>
               )}
+              <OptimizationBenefitWarning
+                choice={draftPreference.choice}
+                metadata={{
+                  width: editingCard?.width ?? sourceMetadata.width ?? sourceDimensions?.width,
+                  height: editingCard?.height ?? sourceMetadata.height ?? sourceDimensions?.height,
+                  sizeBytes: editingCard?.sizeBytes ?? sourceMetadata.sizeBytes,
+                  durationSeconds: editingCard?.durationSeconds ?? sourceMetadata.durationSeconds,
+                }}
+                customSettings={resolvedCustom ?? undefined}
+              />
               <OptimizationChoicePicker
                 value={draftPreference.choice}
                 onChange={setDraftChoice}

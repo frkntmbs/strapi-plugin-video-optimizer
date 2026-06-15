@@ -8,12 +8,15 @@ import type {
 import { isVideoFileName } from '../pluginId';
 import { PLUGIN_BUILD_MARKER } from '../buildVersion';
 import { wakeJobPoller } from './initJobPoller';
+import type { VideoSourceMetadata } from './evaluateOptimizationBenefit';
 
 export interface UploadAssetEntry {
   assetId: string;
   assetName: string;
   width?: number;
   height?: number;
+  sizeBytes?: number;
+  durationSeconds?: number;
   actionsContainer: HTMLElement;
   footerHost?: HTMLElement;
 }
@@ -22,6 +25,7 @@ let globalSettings: GlobalOptimizationSettings = { ...DEFAULT_GLOBAL_SETTINGS };
 const assetPreferencesById = new Map<string, AssetOptimizationPreference>();
 const assetNamesById = new Map<string, string>();
 const assetDimensionsById = new Map<string, { width: number; height: number }>();
+const assetMetadataById = new Map<string, VideoSourceMetadata>();
 const assetPreferencesByFileKey = new Map<string, AssetOptimizationPreference>();
 const committedPreferencesByAssetId = new Map<string, AssetOptimizationPreference>();
 const committedPreferencesByName = new Map<string, AssetOptimizationPreference>();
@@ -101,24 +105,60 @@ export const resolveCustomSettingsForAsset = (
 
 export const getSourceDimensionsForAsset = (assetId: string) => assetDimensionsById.get(assetId);
 
-export const updateAssetDimensions = (
-  assetId: string,
-  dimensions: { width: number; height: number }
-) => {
-  assetDimensionsById.set(assetId, dimensions);
+export const getSourceMetadataForAsset = (assetId: string): VideoSourceMetadata => {
+  const stored = assetMetadataById.get(assetId);
+
+  if (stored) {
+    return stored;
+  }
+
+  const dimensions = assetDimensionsById.get(assetId);
+  const card = cardsSnapshot.find((entry) => entry.assetId === assetId);
+
+  return {
+    width: dimensions?.width ?? card?.width,
+    height: dimensions?.height ?? card?.height,
+    sizeBytes: card?.sizeBytes,
+    durationSeconds: card?.durationSeconds,
+  };
+};
+
+export const updateAssetMetadata = (assetId: string, metadata: VideoSourceMetadata) => {
+  const nextMetadata = {
+    ...assetMetadataById.get(assetId),
+    ...metadata,
+  };
+
+  assetMetadataById.set(assetId, nextMetadata);
+
+  if (nextMetadata.width && nextMetadata.height) {
+    assetDimensionsById.set(assetId, {
+      width: nextMetadata.width,
+      height: nextMetadata.height,
+    });
+  }
 
   const index = cards.findIndex((entry) => entry.assetId === assetId);
 
   if (index >= 0) {
     cards[index] = {
       ...cards[index],
-      width: dimensions.width,
-      height: dimensions.height,
+      width: nextMetadata.width ?? cards[index].width,
+      height: nextMetadata.height ?? cards[index].height,
+      sizeBytes: nextMetadata.sizeBytes ?? cards[index].sizeBytes,
+      durationSeconds: nextMetadata.durationSeconds ?? cards[index].durationSeconds,
     };
     cardsSnapshot = cards.slice();
   }
 
   notify();
+};
+
+export const updateAssetDimensions = (
+  assetId: string,
+  dimensions: { width: number; height: number }
+) => {
+  updateAssetMetadata(assetId, dimensions);
 };
 
 export const getAssetDimensions = (assetId: string) => assetDimensionsById.get(assetId);
@@ -260,6 +300,7 @@ export const clearUploadSession = () => {
   assetPreferencesById.clear();
   assetNamesById.clear();
   assetDimensionsById.clear();
+  assetMetadataById.clear();
   cards = [];
   cardsSnapshot = [];
   editingAssetId = null;

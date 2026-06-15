@@ -11,7 +11,7 @@ import {
   setGlobalSettings,
   setUploadAssetCards,
   setUploadDialogElement,
-  updateAssetDimensions,
+  updateAssetMetadata,
   type UploadAssetEntry,
 } from './uploadAssetStore';
 import { isVideoFileName } from '../pluginId';
@@ -20,7 +20,7 @@ import {
   ensureVideoElementDimensions,
   findUploadFilesInDialog,
   matchUploadFile,
-  probeVideoFileDimensions,
+  probeVideoFileMetadata,
 } from './probeVideoDimensions';
 
 const pendingDimensionProbes = new Set<string>();
@@ -312,12 +312,17 @@ const queueDimensionProbe = (
         const file = matchUploadFile(files, assetName);
 
         if (file) {
-          dimensions = await probeVideoFileDimensions(file);
+          const metadata = await probeVideoFileMetadata(file);
+
+          if (metadata) {
+            updateAssetMetadata(assetId, metadata);
+            return;
+          }
         }
       }
 
       if (dimensions) {
-        updateAssetDimensions(assetId, dimensions);
+        updateAssetMetadata(assetId, dimensions);
       }
     } finally {
       pendingDimensionProbes.delete(assetId);

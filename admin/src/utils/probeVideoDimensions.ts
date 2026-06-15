@@ -1,6 +1,17 @@
 export const probeVideoFileDimensions = (
   file: File
 ): Promise<{ width: number; height: number } | undefined> =>
+  probeVideoFileMetadata(file).then((metadata) =>
+    metadata?.width && metadata?.height
+      ? { width: metadata.width, height: metadata.height }
+      : undefined
+  );
+
+export const probeVideoFileMetadata = (
+  file: File
+): Promise<
+  { width: number; height: number; durationSeconds?: number; sizeBytes: number } | undefined
+> =>
   new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement('video');
@@ -13,12 +24,20 @@ export const probeVideoFileDimensions = (
     };
 
     video.onloadedmetadata = () => {
-      const dimensions =
+      const metadata =
         video.videoWidth > 0 && video.videoHeight > 0
-          ? { width: video.videoWidth, height: video.videoHeight }
+          ? {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              durationSeconds:
+                Number.isFinite(video.duration) && video.duration > 0
+                  ? video.duration
+                  : undefined,
+              sizeBytes: file.size,
+            }
           : undefined;
       cleanup();
-      resolve(dimensions);
+      resolve(metadata);
     };
 
     video.onerror = () => {

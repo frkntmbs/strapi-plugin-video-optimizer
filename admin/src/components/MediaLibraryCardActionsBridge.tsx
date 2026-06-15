@@ -9,6 +9,7 @@ import {
 } from '@strapi/design-system';
 import { Cross, Sparkle, Stop } from '@strapi/icons';
 import { useIntl } from 'react-intl';
+import { OptimizationBenefitWarning } from './OptimizationBenefitWarning';
 import { OptimizationChoicePicker } from './OptimizationChoicePicker';
 import { OptimizationCustomForm } from './OptimizationVideoFields';
 import { getTranslationKey } from '../pluginId';
@@ -21,6 +22,7 @@ import {
   closeMediaLibraryEditor,
   createCustomForMediaLibraryFile,
   getEditingMediaLibraryDimensions,
+  getEditingMediaLibrarySizeBytes,
   getEditingMediaLibraryFileId,
   getEditingMediaLibraryFileName,
   getMediaLibraryCards,
@@ -48,6 +50,10 @@ export const MediaLibraryCardActionsBridge = () => {
   const editingDimensions = useSyncExternalStore(
     subscribeMediaLibraryCards,
     getEditingMediaLibraryDimensions
+  );
+  const editingSizeBytes = useSyncExternalStore(
+    subscribeMediaLibraryCards,
+    getEditingMediaLibrarySizeBytes
   );
   const draftPreference = useSyncExternalStore(
     subscribeMediaLibraryCards,
@@ -142,6 +148,15 @@ export const MediaLibraryCardActionsBridge = () => {
                   {editingFileName}
                 </Typography>
               )}
+              <OptimizationBenefitWarning
+                choice={draftPreference.choice}
+                metadata={{
+                  width: editingDimensions?.width,
+                  height: editingDimensions?.height,
+                  sizeBytes: editingSizeBytes,
+                }}
+                customSettings={resolvedCustom ?? undefined}
+              />
               <OptimizationChoicePicker
                 value={draftPreference.choice}
                 onChange={setMediaLibraryDraftChoice}
@@ -212,6 +227,7 @@ export const MediaLibraryCardActionsBridge = () => {
                       openMediaLibraryEditor(card.fileId, card.fileName, {
                         width: card.width,
                         height: card.height,
+                        sizeBytes: card.sizeBytes,
                       });
                     }}
                   >

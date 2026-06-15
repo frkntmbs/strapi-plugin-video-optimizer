@@ -12,6 +12,7 @@ export interface MediaLibraryCardEntry {
   fileName: string;
   width?: number;
   height?: number;
+  sizeBytes?: number;
   optimizeHost: HTMLElement;
   cancelHost: HTMLElement;
 }
@@ -23,6 +24,7 @@ const listeners = new Set<() => void>();
 let editingFileId: number | null = null;
 let editingFileName: string | null = null;
 let editingDimensions: { width?: number; height?: number } | null = null;
+let editingSizeBytes: number | undefined;
 let draftPreference: AssetOptimizationPreference | null = null;
 let enqueueInFlight = false;
 let cancelInFlight = new Set<number>();
@@ -96,6 +98,8 @@ export const getEditingMediaLibraryFileName = () => editingFileName;
 
 export const getEditingMediaLibraryDimensions = () => editingDimensions;
 
+export const getEditingMediaLibrarySizeBytes = () => editingSizeBytes;
+
 export const getMediaLibraryDraftPreference = (): AssetOptimizationPreference => {
   return draftPreference ?? STABLE_EMPTY_DRAFT;
 };
@@ -107,11 +111,12 @@ export const isMediaLibraryCancelInFlight = (fileId: number) => cancelInFlight.h
 export const openMediaLibraryEditor = (
   fileId: number,
   fileName: string,
-  dimensions?: { width?: number; height?: number }
+  metadata?: { width?: number; height?: number; sizeBytes?: number }
 ) => {
   editingFileId = fileId;
   editingFileName = fileName;
-  editingDimensions = dimensions ?? null;
+  editingDimensions = metadata ? { width: metadata.width, height: metadata.height } : null;
+  editingSizeBytes = metadata?.sizeBytes;
   draftPreference = createDefaultPreference();
 
   if (draftPreference.choice === 'custom') {
@@ -125,6 +130,7 @@ export const closeMediaLibraryEditor = () => {
   editingFileId = null;
   editingFileName = null;
   editingDimensions = null;
+  editingSizeBytes = undefined;
   draftPreference = null;
   notify();
 };

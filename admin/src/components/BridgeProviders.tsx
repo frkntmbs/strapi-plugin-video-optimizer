@@ -28,6 +28,9 @@ const enMessages: Record<string, string> = {
   [`${PLUGIN_ID}.choice.custom`]: 'Custom',
   [`${PLUGIN_ID}.choice.custom.description`]:
     'Configure format and quality settings specifically for this video.',
+  [`${PLUGIN_ID}.optimization.warning.title`]: 'This video may already be well optimized',
+  [`${PLUGIN_ID}.optimization.warning.description`]:
+    'Re-encoding may not reduce file size and can even make it larger. Consider Keep original, or raise CRF / lower resolution if you need a smaller output.',
   [`${PLUGIN_ID}.settings.global.defaultFormat`]: 'Output format',
   [`${PLUGIN_ID}.settings.global.videoCodec`]: 'Video codec',
   [`${PLUGIN_ID}.settings.global.crf`]: 'CRF (quality)',
